@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { provideClientHydration } from '@angular/platform-browser';
 import { providePocketBase } from './shared/pocketbase/pocketbase-client';
+import { provideAuth } from './auth';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -10,5 +11,6 @@ export const appConfig: ApplicationConfig = {
         provideRouter(routes),
         provideClientHydration(),
         providePocketBase(),
+        provideAuth(),
     ],
 };

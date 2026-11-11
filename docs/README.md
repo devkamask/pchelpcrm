@@ -19,6 +19,7 @@
 | `guide/project-structure.md`                                             | карта репозитория: `src/app`, `pocketbase/`, `tests/`, `scripts/`; где что искать   |
 | `guide/adding-a-feature.md`                                              | пошаговый пример добавления новой сущности от миграции до экрана (на примере меток) |
 | [guide/shared.md](guide/shared.md)                                       | общая инфраструктура: клиент PocketBase, доменные ошибки, общие UI-компоненты       |
+| [guide/auth.md](guide/auth.md)                                           | вход, регистрация, сессия и cookie                                                  |
 | [guide/tests/api-harness.md](guide/tests/api-harness.md)                 | стенд API-тестов: Vitest в Node, `global-setup`, проверка типов                     |
 | [guide/tests/integration-harness.md](guide/tests/integration-harness.md) | стенд интеграционных тестов: цель `test-integration` builder'а Angular              |
 | [guide/tests/e2e-harness.md](guide/tests/e2e-harness.md)                 | стенд e2e: Playwright, два `webServer`, фикстуры, axe                               |
