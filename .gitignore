@@ -50,6 +50,7 @@ __screenshots__/
 
 # Personal notes
 /NOTES.md
+/.codex/
 
 # System files
 .DS_Store
