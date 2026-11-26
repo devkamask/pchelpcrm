@@ -2,9 +2,9 @@
 
 Проверки конфигурации, поломка которой иначе остаётся незамеченной. Общие правила — в [testing.md](../../testing.md).
 
-`pnpm test:lint` проверяет типы через `tsconfig.tests.json` и `tsconfig.node-scripts.json`, запускает ESLint для `tests/support/pocketbase-server.ts` и `tests/support/serve-test-pocketbase.ts`, затем выполняет тесты конфигов из `tests/lint/**/*.spec.ts` через `vitest.lint.config.mts`.
+`pnpm test:lint` проверяет типы через `tsconfig.tests.json` и `tsconfig.node-scripts.json`, затем выполняет тесты конфигов из `tests/lint/**/*.spec.ts` через `vitest.lint.config.mts`.
 
-Для этих двух скриптов правило ESLint `no-restricted-syntax` запрещает декораторы (селектор `Decorator`). Node.js исполняет скрипты напрямую, а `erasableSyntaxOnly` пропускает декораторы. Тест в `eslint-rules.spec.ts` проверяет оба пути и отдельно разрешённый случай в Angular.
+В `eslint-rules.spec.ts` метод `ESLint#lintFiles()` проверяет файлы `tests/support/pocketbase-server.ts` и `tests/support/serve-test-pocketbase.ts` на диске. Node.js исполняет их напрямую, поэтому правило ESLint `no-restricted-syntax` запрещает в них декораторы (селектор `Decorator`). Отдельные тесты на примере с `@trace` проверяют, что правило действует в обоих скриптах и разрешает декораторы в Angular.
 
 Корневой `tsconfig.json` подключает `tsconfig.node-scripts.json` перед общим конфигом тестов, чтобы VS Code применял проверку стираемого синтаксиса к скриптам запуска PocketBase и их импортам.
 

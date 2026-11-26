@@ -60,17 +60,23 @@ describe('ESLint: new PocketBase(', () => {
     });
 });
 
-describe('ESLint: декораторы', () => {
+describe('ESLint: скрипты Node.js и декораторы', () => {
+    const nodeScripts = [
+        'tests/support/pocketbase-server.ts',
+        'tests/support/serve-test-pocketbase.ts',
+    ];
     const decorated = '@trace\nexport class Example {}';
 
-    it.each(['tests/support/pocketbase-server.ts', 'tests/support/serve-test-pocketbase.ts'])(
-        'запрещены в запускаемом Node.js файле %s',
-        async (file) => {
-            expect(await ruleIds(decorated, file)).toContain('no-restricted-syntax');
-        },
-    );
+    it.each(nodeScripts)('файл %s проходит проверку ESLint', async (file) => {
+        const [result] = await eslint.lintFiles(file);
+        expect(result.messages.filter((message) => message.severity === 2)).toEqual([]);
+    });
 
-    it('разрешены в Angular', async () => {
+    it.each(nodeScripts)('декораторы запрещены в %s', async (file) => {
+        expect(await ruleIds(decorated, file)).toContain('no-restricted-syntax');
+    });
+
+    it('декораторы разрешены в Angular', async () => {
         expect(await ruleIds(decorated, 'src/app/app.ts')).not.toContain('no-restricted-syntax');
     });
 });
