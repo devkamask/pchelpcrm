@@ -16,7 +16,7 @@ export function toDomainError(error: unknown): Error {
     if (!(error instanceof ClientResponseError)) {
         return new UnknownError(undefined, { cause: error });
     }
-    if (error.isAbort || error.status === 0) {
+    if (error.status === 0) {
         return new NetworkError(undefined, { cause: error });
     }
     if (error.status === 404) {

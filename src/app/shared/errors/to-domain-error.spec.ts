@@ -46,14 +46,8 @@ describe('toDomainError', () => {
         expect(toDomainError(pbError(status))).toBeInstanceOf(UnauthorizedError);
     });
 
-    it('status 0 (нет связи) → NetworkError', () => {
+    it('status 0 → NetworkError', () => {
         expect(toDomainError(new ClientResponseError({ status: 0 }))).toBeInstanceOf(NetworkError);
-    });
-
-    it('прерванный запрос → NetworkError', () => {
-        expect(toDomainError(new ClientResponseError({ isAbort: true }))).toBeInstanceOf(
-            NetworkError,
-        );
     });
 
     it.each([429, 500])('%i → UnknownError с исходной ошибкой в cause', (status) => {

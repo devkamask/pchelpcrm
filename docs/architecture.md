@@ -125,7 +125,7 @@ providers: [
 | `NotFoundError`           | 404 (в том числе «чужая запись»: PocketBase не различает «нет» и «нет доступа»)       |
 | `ValidationError`         | 400 с ошибками по полям: `fieldErrors: Record<string, string>` (коды PocketBase)      |
 | `UnauthorizedError`       | 401/403: сессия недействительна                                                       |
-| `NetworkError`            | нет связи / PocketBase недоступен (`status === 0`) или запрос прерван                 |
+| `NetworkError`            | `ClientResponseError` со статусом `0`                                                 |
 | `InvalidCredentialsError` | неверный email или пароль; создаёт сервис аутентификации, `toDomainError` её не знает |
 | `UnknownError`            | всё остальное, в том числе 400 без ошибок по полям; исходная ошибка — в `cause`       |
 
