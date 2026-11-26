@@ -15,6 +15,7 @@ Read:
 
 ## How to work
 
+- **Manual maintainability is mandatory.** Write and change code so the project maintainer can understand, review, debug, and modify it by hand without relying on an agent. When multiple approaches meet the requirements, choose the one that is simplest to maintain by hand, including its tests, configuration, and tooling. Use familiar project patterns, clear names, and straightforward control flow. Add abstractions or extra checks only when their benefit justifies the ongoing maintenance cost.
 - Develop with TDD: tests first, then the implementation.
 - If a task contains a "Forbidden" section ("Запрещено"), obey it.
 - If a solution diverges from `docs/architecture.md` or `docs/data-model.md`, stop and discuss the document change with the user.
