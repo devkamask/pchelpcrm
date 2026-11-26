@@ -39,16 +39,17 @@ CRM для частных мастеров: учёт клиентов и зая�
 pnpm install
 cp .env.example .env    # заполнить PB_SUPERUSER_EMAIL и PB_SUPERUSER_PASSWORD
 pnpm pb:superuser       # создать суперпользователя PocketBase
-pnpm pb:serve           # PocketBase на http://127.0.0.1:8090, админка — /_/
-pnpm start              # приложение на http://localhost:4200/
 ```
 
-В разработке браузер обращается к PocketBase по пути `/pb/*`, его проксирует dev-сервер Angular.
+Для ежедневной разработки запускайте `pnpm dev`. Приложение доступно на [localhost:4200](http://localhost:4200/), админка PocketBase — на [127.0.0.1:8090/_/](http://127.0.0.1:8090/_/). `Ctrl+C` останавливает оба сервера.
+
+В разработке браузер обращается к PocketBase по пути `/pb/*`, его проксирует dev-сервер Angular. При необходимости каждый сервер можно запустить отдельно через `pnpm start` или `pnpm pb:serve`.
 
 ## Команды
 
 | Команда                 | Что делает                                                                                               |
 | ----------------------- | -------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`              | Angular и локальный PocketBase в одном терминале                                                         |
 | `pnpm start`            | dev-сервер приложения                                                                                    |
 | `pnpm build`            | production-сборка в `dist/`                                                                              |
 | `pnpm lint`             | ESLint                                                                                                   |
@@ -62,7 +63,7 @@ pnpm start              # приложение на http://localhost:4200/
 | `pnpm pb:migrate`       | применить миграции                                                                                       |
 | `pnpm pb:superuser`     | создать суперпользователя или сбросить его пароль                                                        |
 
-Тесты, которым нужен PocketBase, сами поднимают временный экземпляр и не трогают `pocketbase/pb_data`. Перед первым запуском e2e установите браузер: `pnpm exec playwright install chromium`. Стенд e2e использует свои порты (PocketBase — 8190, приложение — 4300), поэтому не мешает `pnpm pb:serve` и `pnpm start`.
+Тесты, которым нужен PocketBase, сами поднимают временный экземпляр и не трогают `pocketbase/pb_data`. Перед первым запуском e2e установите браузер: `pnpm exec playwright install chromium`. Стенд e2e использует свои порты (PocketBase — 8190, приложение — 4300), поэтому не мешает `pnpm dev`.
 
 ## Структура репозитория
 
