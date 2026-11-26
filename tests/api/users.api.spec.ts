@@ -16,7 +16,7 @@ const invalidField = (field: string) => ({
 });
 
 describe('users: регистрация', () => {
-    it('регистрирует гостя с валидными данными, неподтверждённым и с именем', async () => {
+    it('создаёт неподтверждённого пользователя с указанным именем', async () => {
         const record = await register({ name: 'Иван' });
 
         expect(record['verified']).toBe(false);

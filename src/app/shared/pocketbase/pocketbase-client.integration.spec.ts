@@ -20,8 +20,8 @@ async function signedIn(user: TestUser): Promise<PocketBase> {
     return pb;
 }
 
-describe('клиент PocketBase из DI против тестового PocketBase', () => {
-    it('получает health со статусом 200', async () => {
+describe('работа клиента PocketBase из DI с тестовым сервером', () => {
+    it('получает код 200 в ответе на health.check()', async () => {
         const health = await pocketBaseFromDi().health.check();
 
         expect(health.code).toBe(200);

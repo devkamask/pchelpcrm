@@ -42,15 +42,17 @@ export function describeTagRepositoryContract(
 
 ## Тестовый PocketBase
 
+`pnpm test:lint` запускает `tsc` с конфигом `tsconfig.node-scripts.json` для проверки `tests/support/serve-test-pocketbase.ts` и его импортов, включая `pocketbase-server.ts`. Флаг `erasableSyntaxOnly` запрещает TypeScript-конструкции, для которых требуется генерация JavaScript, а `verbatimModuleSyntax` требует помечать импорты типов через `import type`. Декораторы в обоих скриптах запрещает отдельное правило ESLint, поскольку Node.js исполняет эти файлы напрямую.
+
 API-, integration- и e2e-тесты работают с **отдельным временным экземпляром** PocketBase, а не с `pocketbase/pb_data`:
 
 1. Создаётся временная папка данных (в системной temp-папке).
 2. Создаётся суперпользователь (`pocketbase superuser upsert`) со сгенерированными email и паролем: инстанс одноразовый, поэтому `.env` тестам не нужен.
 3. Запускается `pocketbase serve` на свободном порту `127.0.0.1` (или на заданном: e2e — 8190) с `--dir <временная папка> --migrationsDir pocketbase/pb_migrations --hooksDir pocketbase/pb_hooks --automigrate=false`; миграции применяются при старте.
-4. Ожидание готовности по `GET /api/health`.
+4. Стенд сверяет идентификатор экземпляра по `GET /test-instance.txt`, затем проверяет `GET /api/health`. Подробности в [гайде API-стенда](guide/tests/api-harness.md).
 5. После прогона процесс останавливается, папка удаляется.
 
-Код запуска один на все уровни: `tests/support/pocketbase-server.ts` (`startPocketBase({ port? }): Promise<{ url, dataDir, superuser, stop }>`).
+Код запуска один на все уровни: `tests/support/pocketbase-server.ts` (`startPocketBase({ port? }): Promise<{ pid, url, dataDir, superuser, stop }>`).
 
 Стенд убирает за собой процесс и папку после успешного прогона, после падения (в том числе неудачного старта), по `SIGINT`/`SIGTERM` (Ctrl+C) и при выходе процесса. Предел: `SIGKILL` процесса-владельца перехватить нельзя — тогда PocketBase может продолжить работу, а папка `pchelpcrm-pb-*` остаться в temp.
 

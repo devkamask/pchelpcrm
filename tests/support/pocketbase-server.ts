@@ -1,10 +1,10 @@
 // Запускает временный PocketBase с миграциями и хуками проекта (см. docs/testing.md).
-// Выполняется под чистым Node (tests/support/fixtures/hold-pocketbase.ts): только импорты node:* и стираемый TypeScript.
+// Выполняется под чистым Node (tests/support/serve-test-pocketbase.ts): только импорты node:* и стираемый TypeScript.
 import { type ChildProcess, execFile, spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import { rmSync } from 'node:fs';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { type AddressInfo, createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -13,10 +13,12 @@ import { promisify } from 'node:util';
 
 const START_TIMEOUT_MS = 10_000;
 const STOP_TIMEOUT_MS = 5_000;
+const INSTANCE_FILE = 'test-instance.txt';
 const SIGNALS = ['SIGINT', 'SIGTERM'] as const;
 
 /** Запущенный временный экземпляр PocketBase. */
 export interface PocketBaseServer {
+    pid: number;
     url: string;
     dataDir: string;
     superuser: { email: string; password: string };
@@ -25,7 +27,7 @@ export interface PocketBaseServer {
 }
 
 /**
- * Запускает одноразовый PocketBase на свободном порту (или на `port`, если он задан) и ждёт, пока он ответит на `/api/health`.
+ * Запускает одноразовый PocketBase на свободном или заданном порту, сверяет идентификатор экземпляра и проверяет `/api/health`.
  *
  * Процесс и каталог данных удаляются при `stop()`, по `SIGINT`/`SIGTERM`, при выходе
  * и при ошибке запуска.
@@ -67,6 +69,11 @@ export async function startPocketBase({ port }: { port?: number } = {}): Promise
     process.on('exit', onExit);
 
     try {
+        const instanceId = randomUUID();
+        const publicDir = join(dataDir, 'public');
+        await mkdir(publicDir);
+        await writeFile(join(publicDir, INSTANCE_FILE), instanceId);
+
         await promisify(execFile)('pocketbase', [
             'superuser',
             'upsert',
@@ -88,6 +95,8 @@ export async function startPocketBase({ port }: { port?: number } = {}): Promise
             dataDir,
             '--migrationsDir',
             'pocketbase/pb_migrations',
+            '--publicDir',
+            publicDir,
             '--hooksDir',
             'pocketbase/pb_hooks',
             '--http',
@@ -107,10 +116,12 @@ export async function startPocketBase({ port }: { port?: number } = {}): Promise
             if (proc.exitCode !== null || proc.signalCode !== null) {
                 throw new Error(`PocketBase exited before becoming ready:\n${output}`);
             }
-            if (await isHealthy(url)) return { url, dataDir, superuser, stop };
+            if (await isReady(url, instanceId)) {
+                return { pid: proc.pid as number, url, dataDir, superuser, stop };
+            }
             if (Date.now() > deadline) {
                 throw new Error(
-                    `PocketBase did not answer /api/health within ${START_TIMEOUT_MS} ms:\n${output}`,
+                    `PocketBase instance at ${url} was not ready within ${START_TIMEOUT_MS} ms:\n${output}`,
                 );
             }
         }
@@ -136,9 +147,12 @@ async function freePort(): Promise<number> {
     return port;
 }
 
-async function isHealthy(url: string): Promise<boolean> {
+async function isReady(url: string, instanceId: string): Promise<boolean> {
     try {
-        return (await fetch(`${url}/api/health`, { signal: AbortSignal.timeout(1_000) })).ok;
+        const options = { signal: AbortSignal.timeout(1_000), redirect: 'error' } as const;
+        const marker = await fetch(`${url}/${INSTANCE_FILE}`, options);
+        if (!marker.ok || (await marker.text()) !== instanceId) return false;
+        return (await fetch(`${url}/api/health`, options)).ok;
     } catch {
         return false;
     }

@@ -19,7 +19,7 @@ function createService(pbUrl: string = inject('pbUrl')): { auth: AuthService; pb
     return { auth: injector.get(PocketBaseAuthService), pb: injector.get(POCKETBASE) };
 }
 
-/** Токен и запись настоящего входа, как их кладёт в auth store cookie. */
+/** Токен и запись пользователя после входа через PocketBase. */
 async function sessionOf(user: Awaited<ReturnType<typeof createUser>>) {
     const { authStore } = await asUser(user);
     return { token: authStore.token, record: authStore.record };
@@ -33,7 +33,7 @@ function withBrokenSignature(token: string): string {
 
 describeAuthServiceContract(() => createService().auth);
 
-describe('PocketBaseAuthService против тестового PocketBase', () => {
+describe('работа PocketBaseAuthService с тестовым сервером PocketBase', () => {
     it('register сохраняет пользователя в users', async () => {
         const { auth } = createService();
         const email = `user-${crypto.randomUUID()}@test.local`;
@@ -49,7 +49,7 @@ describe('PocketBaseAuthService против тестового PocketBase', () 
         expect(record['name']).toBe('Иван');
     });
 
-    it('login пользователя, созданного в PocketBase, отдаёт id, email и имя', async () => {
+    it('после login доступны id, email и имя пользователя из PocketBase', async () => {
         const created = await createUser({ name: 'Иван' });
         const { auth } = createService();
 
@@ -64,7 +64,7 @@ describe('PocketBaseAuthService против тестового PocketBase', () 
         const { auth, pb } = createService();
         pb.authStore.save(token, record);
         await (await asSuperuser()).collection('users').update(created.id, { name: 'Пётр' });
-        // JWT выпущенный в ту же секунду совпадает с прежним: ждём смены секунды в exp.
+        // JWT, выпущенный в ту же секунду, совпадает с прежним. Ждём изменения exp.
         await new Promise((resolve) => setTimeout(resolve, 1100));
 
         await auth.restore();
@@ -96,7 +96,7 @@ describe('PocketBaseAuthService против тестового PocketBase', () 
         expect(auth.user()).toBeNull();
     });
 
-    it('user() следует за любым изменением auth store', async () => {
+    it('user() возвращает null после очистки authStore', async () => {
         const created = await createUser();
         const { auth, pb } = createService();
         await auth.login(created.email, created.password);

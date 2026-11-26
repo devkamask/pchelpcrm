@@ -60,6 +60,21 @@ describe('ESLint: new PocketBase(', () => {
     });
 });
 
+describe('ESLint: декораторы', () => {
+    const decorated = '@trace\nexport class Example {}';
+
+    it.each(['tests/support/pocketbase-server.ts', 'tests/support/serve-test-pocketbase.ts'])(
+        'запрещены в запускаемом Node.js файле %s',
+        async (file) => {
+            expect(await ruleIds(decorated, file)).toContain('no-restricted-syntax');
+        },
+    );
+
+    it('разрешены в Angular', async () => {
+        expect(await ruleIds(decorated, 'src/app/app.ts')).not.toContain('no-restricted-syntax');
+    });
+});
+
 describe('ESLint: импорт pocketbase', () => {
     it('запрещён в domain/', async () => {
         expect(await ruleIds(valueImport, 'src/app/clients/domain/x.ts')).toContain(

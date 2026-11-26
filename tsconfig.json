@@ -22,6 +22,9 @@
     "files": [],
     "references": [
         {
+            "path": "./tsconfig.node-scripts.json"
+        },
+        {
             "path": "./tsconfig.app.json"
         },
         {

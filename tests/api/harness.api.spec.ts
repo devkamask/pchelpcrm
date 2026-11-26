@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import { existsSync, readdirSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, inject, it, vi } from 'vitest';
@@ -9,7 +10,7 @@ import { asGuest, asSuperuser, asUser, createUser } from '../support/clients';
 import { type PocketBaseServer, startPocketBase } from '../support/pocketbase-server';
 
 const health = (url: string) => fetch(`${url}/api/health`);
-const holdFixture = path.resolve('tests/support/fixtures/hold-pocketbase.ts');
+const serveScript = path.resolve('tests/support/serve-test-pocketbase.ts');
 const migrationsDir = path.resolve('pocketbase/pb_migrations');
 
 describe('стенд API-тестов', () => {
@@ -99,14 +100,21 @@ describe('стенд API-тестов', () => {
         expect(path.resolve(dataDir)).not.toBe(path.resolve('pocketbase/pb_data'));
         expect(path.resolve(dataDir).startsWith(path.resolve(os.tmpdir()) + path.sep)).toBe(true);
         expect(existsSync(dataDir)).toBe(true);
-
-        const user = await createUser();
-        const record = await (await asSuperuser()).collection('users').getOne(user.id);
-        expect(record.id).toBe(user.id);
     });
 });
 
 describe('startPocketBase', { timeout: 30_000 }, () => {
+    it('отклоняет запуск на порту уже работающего PocketBase', async () => {
+        const url = inject('pbUrl');
+        const port = Number(new URL(url).port);
+
+        // При ложном успехе всё равно убираем второй экземпляр и его папку.
+        await expect(startPocketBase({ port }).then((server) => server.stop())).rejects.toThrow(
+            'PocketBase exited before becoming ready',
+        );
+        expect((await health(url)).status).toBe(200);
+    });
+
     it('stop() останавливает процесс и удаляет временную папку', async () => {
         const server = await startPocketBase();
 
@@ -124,33 +132,45 @@ describe('startPocketBase', { timeout: 30_000 }, () => {
     it.each(['SIGINT', 'SIGTERM'] as const)(
         'по %s процесс-владелец убирает за собой PocketBase и папку',
         async (signal) => {
-            // Фикстура поднимает PocketBase, печатает в stdout JSON с url и dataDir и ждёт сигнала.
+            // Скрипт поднимает PocketBase на свободном порту и печатает JSON с pid, url и dataDir.
             // Флаг подавляет предупреждение MODULE_TYPELESS_PACKAGE_JSON для .ts-файла.
             const child = spawn(
                 process.execPath,
-                ['--disable-warning=MODULE_TYPELESS_PACKAGE_JSON', holdFixture],
+                ['--disable-warning=MODULE_TYPELESS_PACKAGE_JSON', serveScript],
                 {
                     stdio: ['ignore', 'pipe', 'inherit'],
                 },
             );
 
             try {
-                // Если фикстура упала до вывода, тест падает сразу, а не ждёт таймаута.
+                // Если скрипт завершился до вывода, тест падает сразу.
                 const [chunk] = await Promise.race([
                     once(child.stdout, 'data'),
                     once(child, 'exit').then(() => {
-                        throw new Error('фикстура завершилась, не запустив PocketBase');
+                        throw new Error('скрипт завершился, не запустив PocketBase');
                     }),
                 ]);
-                const { url, dataDir } = JSON.parse(String(chunk)) as {
+                const { pid, url, dataDir } = JSON.parse(String(chunk)) as {
+                    pid: number;
                     url: string;
                     dataDir: string;
                 };
                 expect((await health(url)).status).toBe(200);
 
+                const identity = await readProcessIdentity(pid);
+                expect(identity).toBeDefined();
+
                 const exited = once(child, 'exit');
                 child.kill(signal);
                 await exited;
+
+                const remaining = await readProcessIdentity(pid);
+                expect(
+                    remaining === undefined ||
+                        (process.platform === 'linux' &&
+                            remaining.startTime !== identity?.startTime),
+                    `PocketBase PID ${pid} остался после ${signal}: ${remaining?.name}`,
+                ).toBe(true);
 
                 await expect(health(url)).rejects.toThrow();
                 expect(existsSync(dataDir)).toBe(false);
@@ -204,3 +224,29 @@ describe('startPocketBase', { timeout: 30_000 }, () => {
         }
     });
 });
+
+// Linux даёт время запуска и имя из одного снимка /proc; на других ОС проверяем PID.
+async function readProcessIdentity(pid: number) {
+    try {
+        if (process.platform !== 'linux') {
+            process.kill(pid, 0);
+            return { name: 'unknown', startTime: '' };
+        }
+        const stat = await readFile(`/proc/${pid}/stat`, 'utf8');
+        // Имя процесса может содержать пробелы и скобки. После последней ')' идут поля с №3.
+        const nameEnd = stat.lastIndexOf(')');
+        const fields = stat
+            .slice(nameEnd + 1)
+            .trim()
+            .split(/\s+/);
+        const startTime = fields[19];
+        if (nameEnd < 0 || startTime === undefined) {
+            throw new Error(`Invalid /proc/${pid}/stat`);
+        }
+        return { name: stat.slice(stat.indexOf('(') + 1, nameEnd), startTime };
+    } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if (code === 'ENOENT' || code === 'ESRCH') return undefined;
+        throw error;
+    }
+}

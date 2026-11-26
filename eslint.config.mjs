@@ -56,6 +56,18 @@ export default defineConfig([
         },
     },
     {
+        files: ['tests/support/pocketbase-server.ts', 'tests/support/serve-test-pocketbase.ts'],
+        rules: {
+            'no-restricted-syntax': [
+                'error',
+                {
+                    selector: 'Decorator',
+                    message: 'Node.js запускает этот скрипт напрямую. Убери декоратор.',
+                },
+            ],
+        },
+    },
+    {
         files: ['**/domain/**/*.ts', '**/ui/**/*.ts'],
         rules: {
             'no-restricted-imports': [

@@ -1,7 +1,7 @@
 import { DOCUMENT, EnvironmentInjector, createEnvironmentInjector } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { LocalAuthStore } from 'pocketbase';
-import { PB_PUBLIC_PATH, PB_URL, providePbUrlForServer } from './pb-url';
+import { PB_URL, providePbUrlForServer } from './pb-url';
 import { POCKETBASE, providePocketBase } from './pocketbase-client';
 
 function createAppInjector(): EnvironmentInjector {
@@ -52,10 +52,6 @@ describe('клиент PocketBase в DI', () => {
 describe('PB_URL', () => {
     afterEach(() => {
         vi.unstubAllEnvs();
-    });
-
-    it('PB_PUBLIC_PATH равен /pb', () => {
-        expect(PB_PUBLIC_PATH).toBe('/pb');
     });
 
     it('в браузере — <origin>/pb', () => {

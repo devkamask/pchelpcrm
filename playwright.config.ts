@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
-import { E2E_APP_URL, E2E_PB_PORT, E2E_PB_URL } from './tests/e2e/urls';
+import { E2E_APP_PORT, E2E_APP_URL, E2E_PB_PORT, E2E_PB_URL } from './tests/e2e/urls';
 
 const ci = !!process.env['CI'];
 
@@ -25,7 +25,7 @@ export default defineConfig({
             gracefulShutdown: { signal: 'SIGTERM', timeout: 10_000 },
         },
         {
-            command: `pnpm ng serve --port ${new URL(E2E_APP_URL).port}`,
+            command: `pnpm ng serve --port ${E2E_APP_PORT}`,
             url: E2E_APP_URL,
             env: { PB_URL: E2E_PB_URL },
             reuseExistingServer: !ci,
